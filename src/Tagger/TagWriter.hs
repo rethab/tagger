@@ -4,7 +4,7 @@ import           Control.Applicative       ((<$>))
 import           Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import           Data.Maybe                (fromJust)
 import qualified Sound.TagLib as T
-import           System.FilePath.Posix     ((</>))
+import           System.FilePath           ((</>))
 import           Tagger.Types
 
 writeTags :: [Artist] -> IO ()
