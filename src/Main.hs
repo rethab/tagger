@@ -4,7 +4,7 @@ import System.Directory          (getCurrentDirectory)
 import System.Environment        (getArgs)
 import Tagger.Crawler            (listArtists)
 import Tagger.IncompletionFinder (getIncomplete)
-import Tagger.TagCompleter       (complete)
+import Tagger.TagCompleter       (complete, completePar)
 import Tagger.TagWriter          (writeTags)
 
 main :: IO ()
@@ -18,7 +18,7 @@ main = do args <- getArgs
           incomplete <- getIncomplete artists 
           putStrLn (show (length incomplete) ++ " are incomplete.")
           putStr ("Complete ID3 Tags.. ")
-          completed <- complete incomplete
+          completed <- completePar incomplete
           putStrLn "done."
           putStrLn "Write back? "
           wb <- getLine
