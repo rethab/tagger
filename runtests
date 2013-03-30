@@ -1,0 +1,11 @@
+#!/bin/bash
+rm -rf data
+echo "Deleted data/"
+cp -r cleandata data
+echo "Copied cleandata/ to data/"
+cabal clean || { echo "clean failed"; exit 1; }
+cabal configure --enable-tests || { echo "configure failed"; exit 1; }
+cabal build || { echo "build failed"; exit 1; }
+cabal test 
+rm -rf data
+echo "Deleted data/"
