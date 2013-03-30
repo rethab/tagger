@@ -6,6 +6,6 @@ before_install:
         - rm -rf data/
         - cp -r cleandata/ data/
 script: make script
-install: cabal configure && cabal build
+install: cabal install --only-dependencies
 test: make test
 
