@@ -1,15 +1,18 @@
 module TestIncompletionFinder (tests) where
 
 import Control.Applicative ((<$>))
+import System.FilePath
 import Tagger.Types
 import Tagger.IncompletionFinder
 import Test.Framework.Providers.HUnit
 import Test.HUnit
+import TestUtils
 
 tests = [ testCase "fillTags" fillTags ]
 
 fillTags = do
-    arts <- getIncomplete [decap_in, hate_in, agr_in]
+    dir <- getDataDir
+    arts <- getIncomplete [decap_in dir, hate_in dir, agr_in dir]
     length arts @?= 2
     let hate = head $ filter (\a -> artName a == "Hate Eternal") arts
     length (artAlbs hate) @?= 1
