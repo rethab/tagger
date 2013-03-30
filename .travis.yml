@@ -7,4 +7,5 @@ before_install:
         - cp -r cleandata/ data/
 script: make script
 install: make install
+test: make test
 
