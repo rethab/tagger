@@ -6,4 +6,4 @@ before_script:
         - cp -r cleandata/ data/
 script: make iDontExist
 install: make iDontExist
-before_install: make iDontExist
+before_install: ls -l
