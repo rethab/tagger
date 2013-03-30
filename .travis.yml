@@ -1,4 +1,6 @@
 language: haskell
+notifications:
+        email: false
 before_install:
         - rm -rf data/
         - cp -r cleandata/ data/
