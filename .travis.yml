@@ -1,1 +1,6 @@
 language: haskell
+before_install:
+        - rm -rf data/
+        - cp -r cleandata/ data/
+script:
+        - cabal configure && cabal build
