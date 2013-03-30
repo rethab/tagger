@@ -1,9 +1,9 @@
 language: haskell
 notifications:
         email: false
-before_script:
-        - rm -rf data/
-        - cp -r cleandata/ data/
+before_script: ls -l
 script: make iDontExist
 install: make iDontExist
-before_install: ls -l
+before_install:
+        - rm -rf data/
+        - cp -r cleandata/ data/
