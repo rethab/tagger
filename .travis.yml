@@ -1,7 +1,0 @@
-language: haskell
-notifications:
-        email: false
-before_script:
-        - rm -rf data/
-        - cp -r cleandata/ data/
-script: "cabal configure --disable-tests"
