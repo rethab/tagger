@@ -1,0 +1,2 @@
+#!/bin/bash
+grep -h -e "\-\-\ from" src/*/**.hs | awk '/[^\ ]/ {print $3}' | sort -u
