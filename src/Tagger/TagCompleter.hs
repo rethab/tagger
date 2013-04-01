@@ -1,12 +1,15 @@
-{-# LANGUAGE DataKinds, OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Tagger.TagCompleter where
 
 -- from base
 import           Control.Applicative  ((<$>), (<*>))
+import           Control.Exception    (SomeException, try)
 import           Control.Monad        (mapM, mzero)
 import qualified Data.Char            as C
-import           Data.Maybe           (isNothing, maybe)
+import           Data.Either          (partitionEithers)
+import           Data.Maybe           (isNothing)
 import           Prelude              as P
 
 -- from text
@@ -27,22 +30,28 @@ import           Tagger.Types
 
 taggerapikey = "a2c21e95ab7239f87f2e5ff716fc6374"
 
-complete :: [Artist] -> IO [Artist]
+complete :: [Artist] -> IO [Either String Artist]
 complete arts = mapM completeArt arts
 
-completeArt :: Artist -> IO Artist
-completeArt art = mapM (completeAlb art) (artAlbs art) >>= \albs ->
-                    return $ art { artAlbs = albs }
+-- | Completes on Artist's tag information based on last.fm sources. If
+-- one of the album fails, completion of the entire artist fails and
+-- individual error messages are concatenated.
+completeArt :: Artist -> IO (Either String Artist)
+completeArt art = do etagged <- mapM (completeAlb art) (artAlbs art)
+                     case partitionEithers etagged of
+                        ([], albs) -> return (Right $ art { artAlbs = albs })
+                        (errs, _) -> return (Left $ P.unlines errs)
 
-completeAlb :: Artist -> Album -> IO Album
-completeAlb art alb = query (artName art) (albName alb) >>=
-                        return . maybe alb (addATags alb)
+completeAlb :: Artist -> Album -> IO (Either String Album)
+completeAlb art alb = do etags <- query (artName art) (albName alb)
+                         return (etags >>= Right . addATags alb)
 
 addATags :: Album -> Album -> Album
-addATags orig last = orig { albTracks = P.zipWith addTTags (albTracks orig) (albTracks last)
+addATags orig last = orig { albTracks = tracks
                           , albRelease = release
                           , albGenre = genre }
-    where release = if isNothing (albRelease orig)
+    where tracks  = P.zipWith addTTags (albTracks orig) (albTracks last)
+          release = if isNothing (albRelease orig)
                         then albRelease last
                         else albRelease orig
           genre   = if isNothing (albGenre orig)
@@ -58,9 +67,13 @@ addTTags orig last = orig { name = name', rank = rank' }
                       then rank last
                       else rank orig
 
-query :: String -> String -> IO (Maybe Album)
-query art alb = do resp <- getAlbInfo (T.pack art) (T.pack alb)
-                   return (resp >>= parseMaybe parseJSON)
+query :: String -> String -> IO (Either String Album)
+query art alb = do eresp <- try $ getAlbInfo (T.pack art) (T.pack alb)
+                   case eresp of
+                      Left err -> return $ Left (show (err :: SomeException))
+                      Right mbalb -> case mbalb of
+                                        Nothing -> return (Left "Failed to get Album Info")
+                                        Just x -> return $ parseEither parseJSON x
 
 getAlbInfo :: Text -> Text -> IO (Response JSON)
 getAlbInfo art alb = lastfm $ LastAlbum.getInfo

@@ -1,2 +1,2 @@
 #!/bin/bash
-ghci -itest:src
+ghci -itest:src -fbreak-on-exception
