@@ -2,17 +2,27 @@
 
 module Tagger.TagCompleter where
 
+-- from base
 import           Control.Applicative  ((<$>), (<*>))
 import           Control.Monad        (mapM, mzero)
-import           Control.Monad.Trans  (liftIO)
-import           Data.Aeson.Types
 import qualified Data.Char            as C
 import           Data.Maybe           (isNothing, maybe)
+import           Prelude              as P
+
+-- from text
 import           Data.Text            as T
+
+-- from mtl
+import           Control.Monad.Trans  (liftIO)
+
+-- from liblastfm
+import qualified Network.Lastfm.Album as LastAlbum
 import           Network.Lastfm       (lastfm, (<*), artist, album, apiKey,
                                        json, Response, Format(JSON))
-import qualified Network.Lastfm.Album as LastAlbum
-import           Prelude              as P
+
+-- from aeson
+import           Data.Aeson.Types
+
 import           Tagger.Types
 
 taggerapikey = "a2c21e95ab7239f87f2e5ff716fc6374"

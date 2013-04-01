@@ -1,15 +1,25 @@
 module Tagger.IncompletionFinder where
 
+-- from base
 import           Data.Maybe                (isNothing)
-import           Control.Monad             (mapM, liftM2)
-import           Control.Monad.Trans       (lift)
-import           Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import           Control.Applicative       ((<$>), (<*>))
-import           System.FilePath.Posix     ((</>))
+import           Control.Monad             (mapM, liftM2)
+
+-- from filepath
+import           System.FilePath           ((</>))
+
+-- from taglib
+import qualified Sound.TagLib as T
+
+-- from mtl
+import           Control.Monad.Trans       (lift)
+
+-- from transformers
+import           Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
+
 import           Tagger.Types
 import           Tagger.Crawler            (listArtists)
 
-import qualified Sound.TagLib as T
 
 -- | Read ID3 Tags and set them on the Songs and Albums of an Artist,
 -- | filter those with incomplete Tags.

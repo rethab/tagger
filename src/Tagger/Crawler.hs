@@ -1,8 +1,13 @@
 module Tagger.Crawler where
 
-import System.Directory      (doesDirectoryExist, getDirectoryContents)
-import System.FilePath.Posix ((</>), splitExtension)
+-- from base
 import Control.Monad         (forM, filterM)
+
+-- from filepath
+import System.FilePath       ((</>), splitExtension)
+
+-- from directory
+import System.Directory      (doesDirectoryExist, getDirectoryContents)
 
 import Tagger.Types
 

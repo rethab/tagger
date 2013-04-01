@@ -1,10 +1,19 @@
 module Tagger.TagWriter where
 
+-- from base
 import           Control.Applicative       ((<$>))
-import           Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import           Data.Maybe                (fromJust)
-import qualified Sound.TagLib as T
+
+-- from filepath
 import           System.FilePath           ((</>))
+
+-- from taglib
+import qualified Sound.TagLib as T
+
+-- from transformers
+import           Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
+
+
 import           Tagger.Types
 
 writeTags :: [Artist] -> IO ()
