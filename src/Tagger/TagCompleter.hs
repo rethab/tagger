@@ -3,10 +3,7 @@
 module Tagger.TagCompleter where
 
 import           Control.Applicative  ((<$>), (<*>))
-import           Control.DeepSeq
 import           Control.Monad        (mapM, mzero)
-import           Control.Monad.Par    (parMapM)
-import           Control.Monad.Par.IO (runParIO)
 import           Control.Monad.Trans  (liftIO)
 import           Data.Aeson.Types
 import qualified Data.Char            as C
@@ -18,15 +15,10 @@ import qualified Network.Lastfm.Album as LastAlbum
 import           Prelude              as P
 import           Tagger.Types
 
-instance NFData Artist
-
 taggerapikey = "a2c21e95ab7239f87f2e5ff716fc6374"
 
 complete :: [Artist] -> IO [Artist]
 complete arts = mapM completeArt arts
-
-completePar :: [Artist] -> IO [Artist]
-completePar = runParIO . parMapM (liftIO . completeArt)
 
 completeArt :: Artist -> IO Artist
 completeArt art = mapM (completeAlb art) (artAlbs art) >>= \albs ->

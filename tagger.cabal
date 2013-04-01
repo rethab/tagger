@@ -18,7 +18,6 @@ source-repository head
 executable tagger
   main-is:           Main.hs
   hs-source-dirs:    src
-  ghc-options:       -O3 -threaded -rtsopts -eventlog
   build-depends:     base ==4.*,
                      directory ==1.*,
                      filepath ==1.*,
