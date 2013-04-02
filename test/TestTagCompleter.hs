@@ -1,31 +1,54 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module TestTagCompleter (tests) where
+module TestTagCompleter where
 
-import           Control.Monad     (when)
+import           Control.Monad       (when)
+import           Control.Applicative ((<$>))
 import           Data.Aeson
+import qualified Data.Text as T
+import           Data.Char
 import           Data.Aeson.Types
-import           Data.HashMap.Lazy (fromList)
-import           Data.Maybe        (fromJust, isNothing)
+import           Data.Either
+import           Data.HashMap.Lazy   (fromList)
+import           Data.Maybe
 import qualified Data.Vector as V
-import           Test.HUnit
 import           Tagger.Types
 import           Tagger.TagCompleter
+import           TestUtils
 
 import           Test.Framework.Providers.HUnit
+import           Test.Framework.Providers.QuickCheck2
 import           Test.HUnit
+import           Test.QuickCheck
 
 tests = [ testCase "completeTrack" completeTrack
         , testCase "completeAlbum" completeAlbum
         , testCase "completeAll" completeAll
         , testCase "callService" callService
         , testCase "parseAlbum" parseAlbum
+        , testProperty "uppercase" prop_first_upper
+        , testProperty "zip_tracks_preserver_location" prop_preserve_location
+        , testProperty "zip_tracks_preserver_file" prop_preserve_file
+        , testProperty "zip_tracks_prefer_first" prop_prefer_first
         ]
+
+prop_first_upper xs = not (null xs) && isAlpha (head xs) ==> isUpper (head (capitalize (T.pack xs)))
+
+prop_preserve_file a b = let c = addTTags a b in file c == file a
+
+prop_preserve_location a b = let c = addTTags a b in location c == location a
+
+prop_prefer_first a b = let c = addTTags a b in and
+    [ if isJust (name a) then name c == name a else name c == name b
+    , if isJust (rank a) then rank c == rank a else rank c == rank b ]
 
 completeTrack = let track = Track "file" "loc" Nothing Nothing
                     album = Album "Nihility" [track] (Just 2007) (Just "Death Metal")
                     artist = Artist "Decapitated" [album]
-                in do [dec] <- complete [artist]
+                in do (errs, res) <- partitionEithers <$> complete [artist]
+                      length errs @?= 0
+                      length res @?= 1
+                      let dec = head res
                       artName dec @?= "Decapitated"
                       let nih = head $ filter (\a -> albName a == "Nihility") (artAlbs dec)
                       albName nih @?= "Nihility"
@@ -42,7 +65,10 @@ completeTrack = let track = Track "file" "loc" Nothing Nothing
 completeAlbum = let track = Track "file" "loc" (Just "Perfect Dehumanisation") (Just 1)
                     album = Album "Nihility" [track] Nothing Nothing
                     artist = Artist "Decapitated" [album]
-                in do [dec] <- complete [artist]
+                in do (errs, res) <- partitionEithers <$> complete [artist]
+                      length errs @?= 0
+                      length res @?= 1
+                      let dec = head res
                       artName dec @?= "Decapitated"
                       let nih = head $ filter (\a -> albName a == "Nihility") (artAlbs dec)
                       albName nih @?= "Nihility"
@@ -59,7 +85,10 @@ completeAlbum = let track = Track "file" "loc" (Just "Perfect Dehumanisation") (
 completeAll = let track = Track "file" "loc" Nothing Nothing
                   album = Album "Nihility" [track] Nothing Nothing
                   artist = Artist "Decapitated" [album]
-              in do [dec] <- complete [artist]
+              in do (errs, res) <- partitionEithers <$> complete [artist]
+                    length errs @?= 0
+                    length res @?= 1
+                    let dec = head res
                     artName dec @?= "Decapitated"
                     let nih = head $ filter (\a -> albName a == "Nihility") (artAlbs dec)
                     albName nih @?= "Nihility"
@@ -76,8 +105,8 @@ completeAll = let track = Track "file" "loc" Nothing Nothing
 callService = let artist = Artist "Immortal" [album]
                   album = Album "At the Heart of Winter" [] Nothing Nothing
               in do res <- query "Immortal" "At the Heart of Winter"
-                    when (isNothing res) (assertFailure "no response from service")
-                    let alb = fromJust res
+                    when (isLeft res) (assertFailure "no response from service")
+                    let alb = fromRight res
                     length (albTracks alb) @?= 6
                     albRelease alb @?= Just 2007
                     albGenre alb @?= Just "Black Metal"
@@ -101,10 +130,11 @@ parseAlbum = do let rlalb = parseEither parseJSON last_album
                 let t2 = (albTracks alb) !! 1
                 name t2 @?= Just "Ethos of Coercion"
                 rank t2 @?= Just 8
-               where isLeft (Left _ ) = True
-                     isLeft _ = False
-                     fromLeft (Left x) = x
-                     fromRight (Right x) = x
+
+isLeft (Left _ ) = True
+isLeft _ = False
+fromLeft (Left x) = x
+fromRight (Right x) = x
 
 last_tracks :: Value
 last_tracks = Array (V.fromList [Object $ fromList [
