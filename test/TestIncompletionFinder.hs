@@ -1,14 +1,31 @@
 module TestIncompletionFinder (tests) where
 
 import Control.Applicative ((<$>))
+import Data.Maybe          (isNothing)
 import System.FilePath
 import Tagger.Types
 import Tagger.IncompletionFinder
 import Test.Framework.Providers.HUnit
+import Test.Framework.Providers.QuickCheck2
 import Test.HUnit
+import Test.QuickCheck
 import TestUtils
 
-tests = [ testCase "fillTags" fillTags ]
+tests = [ testCase "fillTags" fillTags
+        , testProperty "incompleteArtist" prop_art_incomp]
+
+prop_art_incomp art = incomp art == incoArt art
+    where incoArt (Artist _ albs) | or (map incoAlb albs) = True
+                                  | otherwise = False
+          incoAlb (Album _ ts rel gen) | or (map incoTrk ts) = True
+                                       | isNothing rel = True
+                                       | isNothing gen = True
+                                       | otherwise = False
+          incoTrk (Track _ _ n r) | isNothing n = True
+                                  | isNothing r = True
+                                  | otherwise = False
+                                    
+
 
 fillTags = do
     dir <- getDataDir

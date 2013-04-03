@@ -26,21 +26,47 @@ tests = [ testCase "completeTrack" completeTrack
         , testCase "completeAll" completeAll
         , testCase "callService" callService
         , testCase "parseAlbum" parseAlbum
+        , testCase "parseDate" test_parse_date
         , testProperty "uppercase" prop_first_upper
-        , testProperty "zip_tracks_preserver_location" prop_preserve_location
-        , testProperty "zip_tracks_preserver_file" prop_preserve_file
-        , testProperty "zip_tracks_prefer_first" prop_prefer_first
+        , testProperty "preserve_tail" prop_preserve_tail
+        , testProperty "zip_tracks_preserve_location" prop_tracks_preserve_location
+        , testProperty "zip_tracks_preserve_file" prop_tracks_preserve_file
+        , testProperty "zip_tracks_prefer_first" prop_tracks_prefer_first
+        , testProperty "zip_albums_prefer_first" prop_albs_prefer_first
+        , testProperty "zip_albums_zip_tracks" prop_albs_zip_tracks
         ]
 
-prop_first_upper xs = not (null xs) && isAlpha (head xs) ==> isUpper (head (capitalize (T.pack xs)))
+prop_first_upper xs = not (null xs) && isAlpha (head xs) ==>
+    isUpper . head . capitalize $ xs
 
-prop_preserve_file a b = let c = addTTags a b in file c == file a
+prop_preserve_tail xs = not (null xs) ==> tail (capitalize xs) == tail xs
 
-prop_preserve_location a b = let c = addTTags a b in location c == location a
+prop_tracks_preserve_file a b = let c = addTTags a b in file c == file a
 
-prop_prefer_first a b = let c = addTTags a b in and
+prop_tracks_preserve_location a b = let c = addTTags a b
+                                    in location c == location a
+
+prop_tracks_prefer_first a b = let c = addTTags a b in and
     [ if isJust (name a) then name c == name a else name c == name b
     , if isJust (rank a) then rank c == rank a else rank c == rank b ]
+
+prop_albs_prefer_first a b = let c = addATags a b in and
+    [ if isJust (albRelease a)
+        then albRelease c == albRelease a
+        else albRelease c == albRelease b
+    , if isJust (albGenre a)
+        then albGenre c == albGenre a
+        else albGenre c == albGenre b ]
+
+prop_albs_zip_tracks a b =
+    let c = addATags a b in albTracks c == combined (albTracks a) (albTracks b)
+  where combined [] _ = []
+        combined _ [] = []
+        combined (a:as) (b:bs) = addTTags a b : combined as bs
+
+test_parse_date = do
+    parseDate "Sat, 19 Dec 2009 03:15:17 +0000" @?= 2009
+    parseDate "Wed, 20 Sep 1999 04:25:37 +0000" @?= 1999
 
 completeTrack = let track = Track "file" "loc" Nothing Nothing
                     album = Album "Nihility" [track] (Just 2007) (Just "Death Metal")
