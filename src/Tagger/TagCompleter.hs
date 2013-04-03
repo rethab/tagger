@@ -97,14 +97,16 @@ instance FromJSON Album where
         release <- parseDate <$> (alb .: "releasedate")
         genre'' <- alb .: "toptags"
         genre' <- P.head <$> (genre'' .: "tag")
-        genre <- capitalize <$> genre' .: "name"
+        genre <- capwords <$> genre' .: "name"
         return (Album title tracks (Just release) (Just genre))
     parseJSON _ = mzero
 
 parseDate :: String -> Int
 parseDate = P.read . P.take 4 . (!! 2) . P.words
 
-capitalize :: Text -> String
-capitalize = P.unwords . P.map up . P.words . T.unpack
-    where up [] = []
-          up (x:xs) = C.toUpper x : xs
+capwords :: String -> String
+capwords = P.unwords . P.map capitalize . P.words
+
+capitalize :: String -> String
+capitalize [] = []
+capitalize (x:xs) = C.toUpper x : xs
