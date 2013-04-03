@@ -31,15 +31,11 @@ writeTrack rel gen trk = do tagfile <- fromJust <$> T.open path
     where path = location trk </> file trk
 
 writeTag :: T.Tag -> Maybe Int -> Maybe String -> Track -> IO ()
-writeTag tag mbrel mbgen trk = do case mbrel of
-                                    Nothing -> return ()
-                                    Just rel -> T.setYear tag (toInteger rel)
-                                  case mbgen of
-                                    Nothing -> return ()
-                                    Just gen -> T.setGenre tag gen
-                                  case name trk of
-                                    Nothing -> return ()
-                                    Just title -> T.setTitle tag title
-                                  case rank trk of
-                                    Nothing -> return ()
-                                    Just track -> T.setTrack tag (toInteger track)
+writeTag tag mbrel mbgen trk = do
+    mbwrite (toInteger <$> mbrel) T.setYear
+    mbwrite mbgen T.setGenre
+    mbwrite (name trk) T.setTitle
+    mbwrite (toInteger <$> rank trk) T.setTrack
+ where mbwrite :: Maybe a -> (T.Tag -> a -> IO ()) -> IO ()
+       mbwrite Nothing _  = return ()
+       mbwrite (Just x) f = f tag x
