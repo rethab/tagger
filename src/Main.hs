@@ -13,6 +13,7 @@ import Tagger.Crawler            (listArtists)
 import Tagger.IncompletionFinder (getIncomplete)
 import Tagger.TagCompleter       (complete)
 import Tagger.TagWriter          (writeTags)
+import Tagger.Types
 
 main :: IO ()
 main = do args <- getArgs
@@ -39,3 +40,10 @@ main' dir = do putStrLn "Tagger 0.1, (c) rethab 2013"
                                putStrLn "done."
                        else do putStrLn "No writing back: "
                                mapM_ (putStrLn . show) completed
+
+
+artist = Artist "Inexistent" [album]
+album = Album "Inexistent" [track] Nothing Nothing
+track = Track "" "" Nothing Nothing
+runmain = do (errs, completed) <- partitionEithers <$> complete [artist]
+             mapM_ putStrLn errs

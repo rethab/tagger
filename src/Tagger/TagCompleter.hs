@@ -8,6 +8,7 @@ import           Control.Applicative  ((<$>), (<*>))
 import           Control.Exception    (SomeException, try)
 import           Control.Monad        (mzero)
 import qualified Data.Char            as C
+import Control.DeepSeq
 import           Data.Either          (partitionEithers)
 import           Data.Maybe           (isNothing)
 import           Prelude              as P
@@ -41,8 +42,10 @@ completeArt art = do etagged <- mapM (completeAlb art) (artAlbs art)
                         (errs, _) -> return (Left $ P.unlines errs)
 
 completeAlb :: Artist -> Album -> IO (Either String Album)
-completeAlb art alb = do etags <- query (artName art) (albName alb)
-                         return (etags >>= Right . addATags alb)
+completeAlb art alb = do etags <- try $!! query (artName art) (albName alb)
+                         case etags of
+                            Left err -> Left (show (err :: SomeException))
+                            Right albb -> return (albb >>= Right . addATags alb)
 
 addATags :: Album -> Album -> Album
 addATags orig last' = orig { albTracks = tracks
@@ -65,13 +68,15 @@ addTTags orig last' = orig { name = name', rank = rank' }
                       then rank last'
                       else rank orig
 
+instance NFData Album
+
 query :: String -> String -> IO (Either String Album)
-query art alb = do eresp <- try $ getAlbInfo (T.pack art) (T.pack alb)
+query art alb = do putStrLn "before"
+                   eresp <- getAlbInfo (T.pack art) (T.pack alb)
+                   putStrLn "after"
                    case eresp of
-                      Left err -> return $ Left (show (err :: SomeException))
-                      Right mbalb -> case mbalb of
-                                        Nothing -> return (Left "Failed to get Album Info")
-                                        Just x -> return $ parseEither parseJSON x
+                            Nothing -> return (Left "Failed to get Album Info")
+                            Just x -> return $ parseEither parseJSON x
 
 getAlbInfo :: Text -> Text -> IO (Response JSON)
 getAlbInfo art alb = lastfm $ LastAlbum.getInfo
