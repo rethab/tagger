@@ -4,11 +4,11 @@
 module Tagger.TagCompleter where
 
 -- from base
+import Debug.Trace
 import           Control.Applicative  ((<$>), (<*>))
-import           Control.Exception    (SomeException, try)
+import           Control.Exception    (try, SomeException)
 import           Control.Monad        (mzero)
 import qualified Data.Char            as C
-import Control.DeepSeq
 import           Data.Either          (partitionEithers)
 import           Data.Maybe           (isNothing)
 import           Prelude              as P
@@ -42,10 +42,28 @@ completeArt art = do etagged <- mapM (completeAlb art) (artAlbs art)
                         (errs, _) -> return (Left $ P.unlines errs)
 
 completeAlb :: Artist -> Album -> IO (Either String Album)
-completeAlb art alb = do etags <- try $!! query (artName art) (albName alb)
-                         case etags of
-                            Left err -> Left (show (err :: SomeException))
-                            Right albb -> return (albb >>= Right . addATags alb)
+completeAlb art alb = do
+        etags <- query (artName art) (albName alb)
+        case etags of
+           Left err -> return (Left (show err))
+           Right alb' -> return (Right (addATags alb alb'))
+
+query :: String -> String -> IO (Either String Album)
+query art alb = do
+        eresp <- try (getAlbInfo (T.pack art) (T.pack alb))
+        case eresp of
+          Left e -> trace (show (e :: SomeException)) (return (Left (show (e :: SomeException))))
+          Right resp ->
+            case resp of
+               Nothing -> return (Left "Failed to get Album Info")
+               Just x -> return $ parseEither parseJSON x
+
+getAlbInfo :: Text -> Text -> IO (Response JSON)
+getAlbInfo art alb = lastfm $ LastAlbum.getInfo
+                        <*> artist art
+                        <*> album alb
+                        <*> apiKey taggerapikey
+                        <*  json
 
 addATags :: Album -> Album -> Album
 addATags orig last' = orig { albTracks = tracks
@@ -67,23 +85,6 @@ addTTags orig last' = orig { name = name', rank = rank' }
           rank' = if isNothing (rank orig)
                       then rank last'
                       else rank orig
-
-instance NFData Album
-
-query :: String -> String -> IO (Either String Album)
-query art alb = do putStrLn "before"
-                   eresp <- getAlbInfo (T.pack art) (T.pack alb)
-                   putStrLn "after"
-                   case eresp of
-                            Nothing -> return (Left "Failed to get Album Info")
-                            Just x -> return $ parseEither parseJSON x
-
-getAlbInfo :: Text -> Text -> IO (Response JSON)
-getAlbInfo art alb = lastfm $ LastAlbum.getInfo
-                        <*> artist art
-                        <*> album alb
-                        <*> apiKey taggerapikey
-                        <*  json
 
 instance FromJSON Track where
     parseJSON (Object v) = do
