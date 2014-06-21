@@ -1,3 +1,7 @@
 dist/
 data/
 tagger.eventlog
+*.hi
+*.o
+src/Tagger/Conduit
+src/Tagger/Main

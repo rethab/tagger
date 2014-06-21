@@ -29,7 +29,7 @@ main' dir = do putStrLn "Tagger 0.1, (c) rethab 2013"
                putStrLn (show (length incomplete) ++ " are incomplete.")
                putStr ("Complete ID3 Tags.. ")
                (errs, completed) <- partitionEithers <$> complete incomplete
-               when (not . null $ errs) (putStrLn "errors:" >> mapM_ putStrLn errs)
+               when (not .  null $ errs) (putStrLn "errors:" >> mapM_ putStrLn errs)
                putStrLn $ show (length completed) ++ " were successful"
                when (not . null $ completed) $ do
                    putStrLn "Write back? "
